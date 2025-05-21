@@ -20,6 +20,30 @@ selected_sex = st.sidebar.multiselect("Select Gender", options=df['Sex'].unique(
 
 filtered_df = df[(df['Pclass'].isin(selected_class)) & (df['Sex'].isin(selected_sex))]
 
+#kpi
+total_passengers = len(df)
+survived_passengers = df[df['Survived'] == 1].shape[0]
+survival_rate =(survived_passengers/total_passengers)*100
+avg_age = df['Age'].mean()
+avg_fare = df['Fare'].mean()
+
+st.title("KPI")
+col1,col2,col3,col4= st.columns(4)
+
+with col1:
+    st.metric("Total Passengers",f"{total_passengers}")
+with col2:
+    st.metric("Survival Rate",f"{survival_rate:.2f}%")
+with col3:
+    st.metric("Avg Fare",f"{avg_age:.2f}%")
+with col4:
+    st.metric("Avg age",f"{avg_age:.2f}%")   
+           
+    
+
+#Display
+
+
 # Layout in two columns
 col1, col2 = st.columns(2)
 
