@@ -3,57 +3,56 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import plotly.express as px
+import matplotlib.pyplot as plt
 
 def load_data():
     df= pd.read_csv("cleanedData.csv")
     return df
 df=load_data()
+st.set_page_config(page_title="Passenger Survival Dashboard",layout="wide")
 
 st.title("🚢 Passenger Survival Dashboard")
 st.markdown("An interactive dashboard to explore survival trends in the Titanic dataset.")
 
-# Sidebar
-st.sidebar.header("Filter Options")
+st.sidebar.header("Filter Data")
+selected_class = st.sidebar.multiselect("Select Passenger Class ",options=df['Pclass'].unique(),default=df['Pclass'].unique())
+selected_sex = st.sidebar.multiselect("Select Gender", options=df['Sex'].unique(), default=df['Sex'].unique())
 
-# Gender filter
-gender = st.sidebar.multiselect("Select Gender", options=df['Sex'].unique(), default=df['Sex'].unique())
+filtered_df = df[(df['Pclass'].isin(selected_class)) & (df['Sex'].isin(selected_sex))]
 
-# Class filter
-pclass = st.sidebar.multiselect("Select Passenger Class", options=df['Pclass'].unique(), default=df['Pclass'].unique())
+# Layout in two columns
+col1, col2 = st.columns(2)
 
-# Age filter
-age_range = st.sidebar.slider("Select Age Range", min_value=int(df['Age'].min()), max_value=int(df['Age'].max()), value=(0, 80))
+# 📊 1. Survival Count Bar Chart
+with col1:
+    st.subheader("1️⃣ Survival Count")
+    survival_count = filtered_df['Survived'].value_counts().rename(index={0: 'Not Survived', 1: 'Survived'})
+    st.bar_chart(survival_count)
 
-# Apply filters
-filtered_df = df[(df['Sex'].isin(gender)) & 
-                 (df['Pclass'].isin(pclass)) & 
-                 (df['Age'].between(age_range[0], age_range[1]))]
+# 📊 2. Age Distribution Histogram
+with col2:
+    st.subheader("2️⃣ Age Distribution by Survival")
+    fig1, ax1 = plt.subplots()
+    sns.histplot(data=filtered_df, x='Age', hue='Survived', multiple='stack', bins=20, palette='pastel', ax=ax1)
+    st.pyplot(fig1)
 
-# KPI Summary
-st.subheader(" Key Statistics")
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Passengers", len(filtered_df))
-col2.metric("Survivors", filtered_df['Survived'].sum())
-col3.metric("Survival Rate", f"{filtered_df['Survived'].mean()*100:.2f}%")
+# 📊 3. Gender Distribution Pie Chart
+with col1:
+    st.subheader("3️⃣ Gender Distribution")
+    gender_count = filtered_df['Sex'].value_counts()
+    fig2, ax2 = plt.subplots()
+    ax2.pie(gender_count, labels=gender_count.index, autopct='%1.1f%%', colors=['#66b3ff', '#ff9999'])
+    ax2.axis('equal')
+    st.pyplot(fig2)
 
-# Survival by Gender
-st.subheader("🧍 Survival Count by Gender")
-fig_gender = px.histogram(filtered_df, x='Sex', color='Survived', barmode='group',
-                          color_discrete_map={0: "red", 1: "green"},
-                          labels={'Survived': 'Survived (0 = No, 1 = Yes)'})
-st.plotly_chart(fig_gender)
 
-# Survival by Class
-st.subheader("🏷️ Survival Rate by Passenger Class")
-fig_class = px.bar(filtered_df.groupby('Pclass')['Survived'].mean().reset_index(),
-                   x='Pclass', y='Survived',
-                   labels={'Survived': 'Survival Rate'},
-                   color='Survived', color_continuous_scale='greens')
-st.plotly_chart(fig_class)
 
-# Age distribution
-st.subheader("📈 Age Distribution")
-fig_age = px.histogram(filtered_df, x='Age', nbins=30, color='Survived',
-                       color_discrete_map={0: "red", 1: "green"},
-                       labels={'Survived': 'Survived (0 = No, 1 = Yes)'})
-st.plotly_chart(fig_age)
+# 📊 4. Survival Rate by Passenger Class
+with col2:
+    st.subheader("4️⃣ Survival Rate by Passenger Class")
+    class_survival = filtered_df.groupby('Pclass')['Survived'].mean()
+    fig3, ax3 = plt.subplots()
+    sns.barplot(x=class_survival.index, y=class_survival.values, palette='Blues_d', ax=ax3)
+    ax3.set_ylabel("Survival Rate")
+    ax3.set_xlabel("Passenger Class")
+    st.pyplot(fig3)
